@@ -1,0 +1,190 @@
+{% extends "zero_trust_demo/base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h1 style="margin: 0; color: white;">🌐 Network Slicing Security</h1>
+    </div>
+    <p class="lead">Demonstrating how 5G isolates different types of network traffic for enhanced security</p>
+</div>
+
+<div class="grid-2">
+    <!-- Slice Access Testing -->
+    <div class="card">
+        <h3 class="section-title">🔐 Test Slice Access</h3>
+        <p>Test if devices can access specific network slices based on security policies.</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Device ID</label>
+                <input type="text" name="device_id" class="form-control" 
+                       placeholder="e.g., EMERG-AMB-001" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Network Slice</label>
+                <select name="slice_id" class="form-control" required>
+                    <option value="">Select a network slice...</option>
+                    {% for slice in slices %}
+                        <option value="{{ slice.slice_id }}">{{ slice.name }} ({{ slice.slice_id }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <button type="submit" name="action" value="access_slice" class="btn btn-primary">
+                Test Slice Access
+            </button>
+        </form>
+
+        {% if access_granted is not None %}
+            <div style="margin-top: 2rem; padding: 1.5rem; background: {% if access_granted %}var(--light-blue){% else %}#fee2e2{% endif %}; 
+                        border-radius: 8px; border-left: 4px solid {% if access_granted %}#22c55e{% else %}#ef4444{% endif %};">
+                <h4 style="color: {% if access_granted %}#166534{% else %}#991b1b{% endif %}; margin-bottom: 1rem;">
+                    {% if access_granted %}✅ SLICE ACCESS GRANTED{% else %}❌ SLICE ACCESS DENIED{% endif %}
+                </h4>
+                {% if device and network_slice %}
+                    <p><strong>Device:</strong> {{ device.name }} ({{ device.get_device_type_display }})</p>
+                    <p><strong>Slice:</strong> {{ network_slice.name }} ({{ network_slice.get_slice_type_display }})</p>
+                    <p><strong>Security Level:</strong> {{ device.get_security_level_display }}</p>
+                    {% if access_granted %}
+                        <p><strong>Bandwidth Allocated:</strong> {{ network_slice.min_bandwidth }} Mbps</p>
+                        <p><strong>Max Latency:</strong> {{ network_slice.max_latency }}ms</p>
+                    {% endif %}
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Available Slices -->
+    <div class="card">
+        <h3 class="section-title">📡 Available Network Slices</h3>
+        <p>Pre-configured network slices with different security requirements:</p>
+        
+        {% if slices %}
+            {% for slice in slices %}
+                <div style="padding: 1rem; margin: 0.5rem 0; background: var(--light-blue); border-radius: 8px; border: 1px solid var(--secondary-blue);">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <h4 style="color: var(--primary-blue); margin: 0 0 0.5rem 0;">{{ slice.name }}</h4>
+                            <p style="margin: 0.25rem 0;"><strong>Type:</strong> {{ slice.get_slice_type_display }}</p>
+                            <p style="margin: 0.25rem 0;"><strong>Priority:</strong> 
+                                <span class="badge" style="background: 
+                                    {% if slice.priority == 'CRITICAL' %}#dc2626
+                                    {% elif slice.priority == 'HIGH' %}#ea580c
+                                    {% elif slice.priority == 'MEDIUM' %}#ca8a04
+                                    {% else %}#16a34a{% endif %}">
+                                    {{ slice.priority }}
+                                </span>
+                            </p>
+                            <p style="margin: 0.25rem 0;"><strong>Performance:</strong> {{ slice.min_bandwidth }}Mbps, {{ slice.max_latency }}ms</p>
+                            <p style="margin: 0.25rem 0;"><strong>Security:</strong> {{ slice.get_security_level_display }}</p>
+                            <p style="margin: 0.25rem 0;">
+                                <strong>Status:</strong> 
+                                {% if slice.is_active %}
+                                    <span style="color: #16a34a;">● Active</span>
+                                {% else %}
+                                    <span style="color: #dc2626;">● Inactive</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p style="text-align: center; color: var(--gray-dark); padding: 2rem;">No network slices configured yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid-2">
+    <!-- Create New Slice -->
+    <div class="card">
+        <h3 class="section-title">🆕 Create Network Slice</h3>
+        <form method="post">
+            {% csrf_token %}
+            {{ slice_form.as_p }}
+            <button type="submit" name="action" value="create_slice" class="btn btn-primary">
+                Create Slice
+            </button>
+        </form>
+    </div>
+
+    <!-- Create Access Policy -->
+    <div class="card">
+        <h3 class="section-title">⚙️ Create Access Policy</h3>
+        <form method="post">
+            {% csrf_token %}
+            {{ policy_form.as_p }}
+            <button type="submit" name="action" value="create_policy" class="btn btn-primary">
+                Create Policy
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Recent Slice Access Logs -->
+<div class="card">
+    <h3 class="section-title">📋 Recent Slice Access Attempts</h3>
+    {% if slice_logs %}
+        <div style="overflow-x: auto;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Device</th>
+                        <th>Slice</th>
+                        <th>Timestamp</th>
+                        <th>Access</th>
+                        <th>Bandwidth</th>
+                        <th>Latency</th>
+                        <th>Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in slice_logs %}
+                    <tr>
+                        <td>{{ log.device.name }}</td>
+                        <td>{{ log.slice.name }}</td>
+                        <td>{{ log.timestamp|date:"M d, H:i" }}</td>
+                        <td>
+                            {% if log.access_granted %}
+                                <span class="status-approved">GRANTED</span>
+                            {% else %}
+                                <span class="status-locked">DENIED</span>
+                            {% endif %}
+                        </td>
+                        <td>{% if log.bandwidth_used %}{{ log.bandwidth_used|floatformat:1 }} Mbps{% endif %}</td>
+                        <td>{% if log.latency %}{{ log.latency|floatformat:1 }}ms{% endif %}</td>
+                        <td>{{ log.reason }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p style="text-align: center; color: var(--gray-dark); padding: 2rem;">No slice access attempts yet.</p>
+    {% endif %}
+</div>
+
+<!-- Educational Section -->
+<div class="card">
+    <h3 class="section-title">🎓 How Network Slicing Works in 5G</h3>
+    <div class="grid-3">
+        <div style="text-align: center; padding: 1.5rem;">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">🔒</div>
+            <h4 style="color: var(--primary-blue); margin-bottom: 1rem;">Isolated Networks</h4>
+            <p style="color: var(--black);">Each slice operates as a separate virtual network with dedicated resources and security policies.</p>
+        </div>
+        <div style="text-align: center; padding: 1.5rem;">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">⚡</div>
+            <h4 style="color: var(--primary-blue); margin-bottom: 1rem;">Quality of Service</h4>
+            <p style="color: var(--black);">Different slices guarantee specific performance levels (bandwidth, latency) for different use cases.</p>
+        </div>
+        <div style="text-align: center; padding: 1.5rem;">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">🛡️</div>
+            <h4 style="color: var(--primary-blue); margin-bottom: 1rem;">Security Isolation</h4>
+            <p style="color: var(--black);">Breach in one slice doesn't affect others. Critical services remain protected.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

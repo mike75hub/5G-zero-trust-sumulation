@@ -1,0 +1,244 @@
+{% extends "zero_trust_demo/base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h1 style="margin: 0; color: white;">🛡️ Real-Time Security Monitor</h1>
+    </div>
+    <p class="lead">Live monitoring of security events and threat detection</p>
+</div>
+
+<!-- Security Overview -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number">{{ total_attempts }}</div>
+        <div class="stat-label">Total Auth Attempts</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ successful_attempts }}</div>
+        <div class="stat-label">Successful</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ failed_attempts }}</div>
+        <div class="stat-label">Failed</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ suspicious_ips|length }}</div>
+        <div class="stat-label">Suspicious IPs</div>
+    </div>
+</div>
+
+<!-- Security Analytics Charts -->
+<div class="chart-grid">
+    <div class="chart-card">
+        <h3 class="chart-title">📊 Authentication Activity (24h)</h3>
+        <div class="chart-container">
+            <canvas id="hourlyAuthChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="chart-card">
+        <h3 class="chart-title">🚨 Threat Distribution</h3>
+        <div class="chart-container">
+            <canvas id="threatDistributionChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <!-- Recent Security Events -->
+    <div class="card">
+        <h3 class="section-title">🔍 Recent Security Events</h3>
+        {% if security_events %}
+            <div style="max-height: 400px; overflow-y: auto;">
+                {% for event in security_events %}
+                    <div style="padding: 1rem; margin: 0.5rem 0; 
+                                background: {% if event.success %}#dcfce7{% else %}#fee2e2{% endif %};
+                                border-radius: 8px; border-left: 4px solid {% if event.success %}#22c55e{% else %}#ef4444{% endif %};">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="flex: 1;">
+                                <strong style="color: var(--black);">
+                                    {% if event.device %}
+                                        {{ event.device.name }}
+                                    {% else %}
+                                        <span style="color: var(--gray-dark);">Unknown Device</span>
+                                    {% endif %}
+                                </strong>
+                                <br>
+                                <small style="color: var(--gray-dark);">{{ event.timestamp|date:"M d, H:i:s" }}</small>
+                                <br>
+                                <small style="color: var(--gray-dark);">IP: {{ event.ip_address }}</small>
+                                {% if event.reason %}
+                                    <br>
+                                    <small style="color: var(--gray-dark);">Reason: {{ event.reason }}</small>
+                                {% endif %}
+                            </div>
+                            <div style="font-size: 1.5rem;">
+                                {% if event.success %}✅{% else %}❌{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: var(--gray-dark); text-align: center; padding: 2rem;">No security events recorded yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- Slice Security Events -->
+    <div class="card">
+        <h3 class="section-title">🌐 Recent Slice Access Events</h3>
+        {% if slice_security_events %}
+            <div style="max-height: 400px; overflow-y: auto;">
+                {% for event in slice_security_events %}
+                    <div style="padding: 1rem; margin: 0.5rem 0; 
+                                background: {% if event.access_granted %}#dcfce7{% else %}#fee2e2{% endif %};
+                                border-radius: 8px; border-left: 4px solid {% if event.access_granted %}#22c55e{% else %}#ef4444{% endif %};">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="flex: 1;">
+                                <strong style="color: var(--black);">
+                                    {{ event.device.name }} → {{ event.slice.name }}
+                                </strong>
+                                <br>
+                                <small style="color: var(--gray-dark);">{{ event.timestamp|date:"M d, H:i:s" }}</small>
+                                {% if event.bandwidth_used %}
+                                    <br>
+                                    <small style="color: var(--gray-dark);">Bandwidth: {{ event.bandwidth_used|floatformat:1 }}Mbps</small>
+                                {% endif %}
+                                {% if event.reason %}
+                                    <br>
+                                    <small style="color: var(--gray-dark);">Reason: {{ event.reason }}</small>
+                                {% endif %}
+                            </div>
+                            <div style="font-size: 1.5rem;">
+                                {% if event.access_granted %}✅{% else %}❌{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: var(--gray-dark); text-align: center; padding: 2rem;">No slice access events yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Suspicious Activity -->
+<div class="card">
+    <h3 class="section-title">🚨 Suspicious Activity</h3>
+    {% if suspicious_ips %}
+        <h4>IPs with Multiple Failed Attempts</h4>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>IP Address</th>
+                        <th>Failed Attempts</th>
+                        <th>Last Attempt</th>
+                        <th>Threat Level</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ip in suspicious_ips %}
+                    <tr>
+                        <td>{{ ip.ip_address }}</td>
+                        <td>{{ ip.failed_count }}</td>
+                        <td>
+                            {% if ip.last_attempt %}
+                                {{ ip.last_attempt|timesince }} ago
+                            {% else %}
+                                Unknown
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if ip.failed_count >= 10 %}
+                                <span class="status-locked">HIGH</span>
+                            {% elif ip.failed_count >= 5 %}
+                                <span style="color: #ea580c; font-weight: bold;">MEDIUM</span>
+                            {% else %}
+                                <span style="color: #ca8a04; font-weight: bold;">LOW</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p style="text-align: center; color: var(--gray-dark); padding: 2rem;">No suspicious activity detected.</p>
+    {% endif %}
+</div>
+
+<script>
+// Security monitor charts
+document.addEventListener('DOMContentLoaded', function() {
+    // Hourly authentication chart
+    const hourlyData = {
+        labels: [{% for hour in hourly_auth_attempts %}'{{ hour.hour }}:00'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        totals: [{% for hour in hourly_auth_attempts %}{{ hour.total }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+        failed: [{% for hour in hourly_auth_attempts %}{{ hour.failed }}{% if not forloop.last %}, {% endif %}{% endfor %}]
+    };
+
+    new Chart(document.getElementById('hourlyAuthChart'), {
+        type: 'line',
+        data: {
+            labels: hourlyData.labels,
+            datasets: [
+                {
+                    label: 'Total Attempts',
+                    data: hourlyData.totals,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true
+                },
+                {
+                    label: 'Failed Attempts',
+                    data: hourlyData.failed,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 2,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Threat distribution chart
+    new Chart(document.getElementById('threatDistributionChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Successful', 'Failed', 'Suspicious IPs'],
+            datasets: [{
+                data: [
+                    {{ successful_attempts }},
+                    {{ failed_attempts }},
+                    {{ suspicious_ips|length }}
+                ],
+                backgroundColor: ['#22c55e', '#ef4444', '#f59e0b'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

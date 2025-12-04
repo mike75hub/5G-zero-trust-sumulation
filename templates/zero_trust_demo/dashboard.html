@@ -1,0 +1,105 @@
+{% extends "zero_trust_demo/base.html" %}
+
+{% block content %}
+<div class="card">
+    <h1>Welcome to 5G Zero-Trust Security System</h1>
+    <p class="lead">A comprehensive demonstration of zero-trust principles in 5G network security</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number">{{ total_devices }}</div>
+        <div class="stat-label">Total Devices</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ approved_devices }}</div>
+        <div class="stat-label">Approved Devices</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ pending_devices }}</div>
+        <div class="stat-label">Pending Approval</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ locked_devices }}</div>
+        <div class="stat-label">Locked Devices</div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <h3>Recent Authentication Attempts</h3>
+        {% if recent_logs %}
+            <div style="max-height: 300px; overflow-y: auto;">
+                {% for log in recent_logs %}
+                    <div style="padding: 0.5rem; border-bottom: 1px solid #eee;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <strong>{% if log.device %}{{ log.device.name }}{% else %}Unknown Device{% endif %}</strong>
+                            <span style="color: {% if log.success %}green{% else %}red{% endif %};">
+                                {% if log.success %}✅{% else %}❌{% endif %}
+                            </span>
+                        </div>
+                        <small>{{ log.timestamp|date:"M d, H:i" }} • {{ log.ip_address }}</small>
+                        {% if log.reason %}<br><small>Reason: {{ log.reason }}</small>{% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>No authentication attempts yet.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h3>Device Type Distribution</h3>
+        {% if device_stats %}
+            <div style="max-height: 300px; overflow-y: auto;">
+                {% for stat in device_stats %}
+                    <div style="padding: 0.5rem; border-bottom: 1px solid #eee;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>{{ stat.device_type }}</span>
+                            <strong>{{ stat.count }}</strong>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>No devices registered yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <h3>Quick Actions</h3>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <a href="{% url 'zero_trust_demo:zero_trust_auth' %}" class="btn btn-primary">
+            🔐 Test Authentication
+        </a>
+        <a href="{% url 'zero_trust_demo:device_management' %}" class="btn btn-primary">
+            📱 Manage Devices
+        </a>
+        <a href="{% url 'zero_trust_demo:security_monitor' %}" class="btn btn-primary">
+            🛡️ Security Monitor
+        </a>
+        <a href="{% url 'zero_trust_demo:device_analytics' %}" class="btn btn-primary">
+            📊 View Analytics
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Zero-Trust Security Principles</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+        <div>
+            <h4>🔍 Verify Explicitly</h4>
+            <p>Authenticate and authorize every device based on all available data points.</p>
+        </div>
+        <div>
+            <h4>🚫 Assume Breach</h4>
+            <p>Minimize blast radius and segment access. Verify all requests as if they originate from an untrusted network.</p>
+        </div>
+        <div>
+            <h4>🎯 Least Privilege</h4>
+            <p>Limit user access with just-in-time and just-enough-access (JIT/JEA) principles.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

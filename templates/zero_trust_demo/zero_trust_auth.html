@@ -1,0 +1,115 @@
+{% extends "zero_trust_demo/base.html" %}
+
+{% block content %}
+<div class="grid-2">
+    <!-- Authentication Panel -->
+    <div class="card">
+        <h2>🔑 Device Authentication</h2>
+        <p>Test the zero-trust authentication system by simulating device access attempts.</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Device Name</label>
+                <input type="text" name="device_name" class="form-control" 
+                       placeholder="e.g., Emergency Ambulance Unit" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Device ID</label>
+                <input type="text" name="device_id" class="form-control" 
+                       placeholder="e.g., DEV-5G-EMERG-001" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Secret Key</label>
+                <input type="password" name="secret_key" class="form-control" 
+                       placeholder="Enter the device secret key" required>
+            </div>
+            
+            <button type="submit" name="action" value="authenticate" class="btn btn-primary">
+                Authenticate Device
+            </button>
+        </form>
+
+        <hr style="margin: 2rem 0;">
+        
+        <h3>Register New Device</h3>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" name="action" value="register" class="btn btn-primary">
+                Register Device
+            </button>
+        </form>
+    </div>
+
+    <!-- Results & Sample Devices -->
+    <div>
+        {% if access_granted is not None %}
+            <div class="card" style="border-left: 4px solid {% if access_granted %}#28a745{% else %}#dc3545{% endif %};">
+                <h3>Authentication Result</h3>
+                {% if access_granted %}
+                    <div style="color: #28a745; font-size: 1.5rem; margin: 1rem 0;">
+                        ✅ ACCESS GRANTED
+                    </div>
+                    <p><strong>Device:</strong> {{ device.name }}</p>
+                    <p><strong>Type:</strong> {{ device.get_device_type_display }}</p>
+                    <p><strong>Security Level:</strong> {{ device.get_security_level_display }}</p>
+                    <p><strong>Last Authentication:</strong> {{ device.last_authentication|default:"First time" }}</p>
+                {% else %}
+                    <div style="color: #dc3545; font-size: 1.5rem; margin: 1rem 0;">
+                        ❌ ACCESS DENIED
+                    </div>
+                    <p>This device cannot access the 5G network due to security policies.</p>
+                    {% if device and device.status == 'LOCKED' %}
+                        <p style="color: #dc3545;"><strong>🔒 Device is temporarily locked</strong></p>
+                    {% endif %}
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <!-- Sample Devices -->
+        <div class="card">
+            <h3>Sample Devices for Testing</h3>
+            <p><small>Use these pre-registered devices to test the authentication system:</small></p>
+            
+            {% if sample_devices %}
+                {% for device in sample_devices %}
+                <div style="padding: 1rem; margin: 0.5rem 0; background: #f8f9fa; border-radius: 8px;">
+                    <strong>{{ device.name }}</strong><br>
+                    <small>ID: <code>{{ device.device_id }}</code></small><br>
+                    <small>Key: <code>{{ device.secret_key }}</code></small><br>
+                    <small>Type: {{ device.get_device_type_display }}</small>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p>No approved devices available. Register a device first.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Educational Section -->
+<div class="card">
+    <h3>🎓 How Zero-Trust Authentication Works in 5G</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+        <div>
+            <h4>1. Device Identity</h4>
+            <p>Every device must have a unique, cryptographically verifiable identity stored in the trusted registry.</p>
+        </div>
+        <div>
+            <h4>2. Multi-Factor Auth</h4>
+            <p>Authentication requires device ID + secret key + approval status verification.</p>
+        </div>
+        <div>
+            <h4>3. Continuous Monitoring</h4>
+            <p>All authentication attempts are logged and monitored for suspicious patterns.</p>
+        </div>
+        <div>
+            <h4>4. Automatic Lockout</h4>
+            <p>Devices are automatically locked after 3 failed authentication attempts.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

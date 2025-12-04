@@ -1,0 +1,528 @@
+{% extends "zero_trust_demo/base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h1 style="margin: 0; color: white;">📈 Advanced Security Analytics</h1>
+    </div>
+    <p class="lead">Comprehensive analytics and visualization of 5G security system performance</p>
+</div>
+
+<!-- Overview Statistics -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number">{{ total_attempts }}</div>
+        <div class="stat-label">Total Auth Attempts</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ auth_success_rate }}%</div>
+        <div class="stat-label">Auth Success Rate</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ successful_attempts }}</div>
+        <div class="stat-label">Successful Auth</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ failed_attempts }}</div>
+        <div class="stat-label">Failed Auth</div>
+    </div>
+</div>
+
+<!-- Authentication Analytics -->
+<div class="chart-grid">
+    <div class="chart-card">
+        <h3 class="chart-title">🔐 Authentication Success Rate</h3>
+        <div class="chart-container">
+            <canvas id="authSuccessChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="chart-card">
+        <h3 class="chart-title">📊 Device Status Distribution</h3>
+        <div class="chart-container">
+            <canvas id="deviceStatusChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Device Type Analytics -->
+<div class="chart-grid">
+    <div class="chart-card">
+        <h3 class="chart-title">📱 Device Type Distribution</h3>
+        <div class="chart-container">
+            <canvas id="deviceTypeChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="chart-card">
+        <h3 class="chart-title">🛡️ Security Level Distribution</h3>
+        <div class="chart-container">
+            <canvas id="securityLevelChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Network Slicing Analytics -->
+<div class="card">
+    <h3 class="section-title">🌐 Network Slicing Analytics</h3>
+    
+    <div class="chart-grid">
+        <div class="chart-card">
+            <h3 class="chart-title">📡 Slice Access Statistics</h3>
+            <div class="chart-container">
+                <canvas id="sliceAccessChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-card">
+            <h3 class="chart-title">⚡ Slice Performance</h3>
+            <div class="chart-container">
+                <canvas id="slicePerformanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="chart-grid">
+        <div class="chart-card">
+            <h3 class="chart-title">🔧 Device Type Access Patterns</h3>
+            <div class="chart-container">
+                <canvas id="deviceAccessChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-card">
+            <h3 class="chart-title">📈 Daily Activity Trends</h3>
+            <div class="chart-container">
+                <canvas id="dailyActivityChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Statistics Tables -->
+<div class="grid-2">
+    <!-- Slice Access Statistics -->
+    <div class="card">
+        <h3 class="section-title">📊 Slice Access Statistics</h3>
+        {% if slice_access_stats %}
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Slice Name</th>
+                            <th>Total Attempts</th>
+                            <th>Granted</th>
+                            <th>Success Rate</th>
+                            <th>Avg Bandwidth</th>
+                            <th>Avg Latency</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in slice_access_stats %}
+                        <tr>
+                            <td>{{ stat.slice__name }}</td>
+                            <td>{{ stat.total_attempts }}</td>
+                            <td>{{ stat.granted_attempts }}</td>
+                            <td>
+                                {% if stat.total_attempts > 0 %}
+                                    {{ stat.granted_attempts|floatformat:1 }}/{{ stat.total_attempts }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if stat.avg_bandwidth %}
+                                    {{ stat.avg_bandwidth|floatformat:1 }} Mbps
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if stat.avg_latency %}
+                                    {{ stat.avg_latency|floatformat:1 }}ms
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p style="text-align: center; color: var(--gray-dark); padding: 2rem;">No slice access data available.</p>
+        {% endif %}
+    </div>
+
+    <!-- Device Access Patterns -->
+    <div class="card">
+        <h3 class="section-title">🔍 Device Access Patterns</h3>
+        {% if device_access_patterns %}
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Device Type</th>
+                            <th>Total Attempts</th>
+                            <th>Success Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pattern in device_access_patterns %}
+                        <tr>
+                            <td>{{ pattern.device__device_type }}</td>
+                            <td>{{ pattern.total_attempts }}</td>
+                            <td>{{ pattern.success_rate|floatformat:1 }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p style="text-align: center; color: var(--gray-dark); padding: 2rem;">No device access pattern data.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Registrations -->
+<div class="card">
+    <h3 class="section-title">🆕 Recent Device Registrations</h3>
+    {% if recent_registrations %}
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Device Name</th>
+                        <th>Device ID</th>
+                        <th>Type</th>
+                        <th>Security Level</th>
+                        <th>Status</th>
+                        <th>Registered</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for device in recent_registrations %}
+                    <tr>
+                        <td>{{ device.name }}</td>
+                        <td><code>{{ device.device_id }}</code></td>
+                        <td>{{ device.get_device_type_display }}</td>
+                        <td>{{ device.get_security_level_display }}</td>
+                        <td>
+                            <span class="status-{{ device.status|lower }}">
+                                {{ device.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ device.created_at|date:"M d, Y" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p style="text-align: center; color: var(--gray-dark); padding: 2rem;">No devices registered yet.</p>
+    {% endif %}
+</div>
+
+<<script>
+// Convert Django data to JavaScript arrays
+const statusData = {
+    labels: [{% for stat in status_distribution %}'{{ stat.status }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+    counts: [{% for stat in status_distribution %}{{ stat.count }}{% if not forloop.last %}, {% endif %}{% endfor %}]
+};
+
+const typeData = {
+    labels: [{% for type in type_distribution %}'{{ type.device_type }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+    counts: [{% for type in type_distribution %}{{ type.count }}{% if not forloop.last %}, {% endif %}{% endfor %}]
+};
+
+const securityLevelData = {
+    labels: [{% for level in security_level_dist %}'{{ level.security_level }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+    counts: [{% for level in security_level_dist %}{{ level.count }}{% if not forloop.last %}, {% endif %}{% endfor %}]
+};
+
+const sliceAccessData = {
+    labels: [{% for stat in slice_access_stats %}'{{ stat.slice__name }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+    totals: [{% for stat in slice_access_stats %}{{ stat.total_attempts }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+    granted: [{% for stat in slice_access_stats %}{{ stat.granted_attempts }}{% if not forloop.last %}, {% endif %}{% endfor %}]
+};
+
+const deviceAccessData = {
+    labels: [{% for pattern in device_access_patterns %}'{{ pattern.device__device_type }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+    successRates: [{% for pattern in device_access_patterns %}{{ pattern.success_rate|floatformat:1 }}{% if not forloop.last %}, {% endif %}{% endfor %}]
+};
+
+const slicePerformanceData = {
+    labels: [{% for perf in slice_performance %}'{{ perf.slice__name }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+    bandwidth: [{% for perf in slice_performance %}{{ perf.avg_bandwidth|default:0|floatformat:1 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+    latency: [{% for perf in slice_performance %}{{ perf.avg_latency|default:0|floatformat:1 }}{% if not forloop.last %}, {% endif %}{% endfor %}]
+};
+
+// Format dates for daily activity chart
+const dailyAuthLabels = [{% for day in daily_auth_attempts %}'{{ day.date|date:"M d" }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+const dailyAuthData = [{% for day in daily_auth_attempts %}{{ day.count }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+const dailySliceData = [{% for day in daily_slice_attempts %}{{ day.count }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+// Chart configurations
+const chartConfigs = {
+    authSuccess: {
+        type: 'doughnut',
+        data: {
+            labels: ['Successful', 'Failed'],
+            datasets: [{
+                data: [{{ successful_attempts }}, {{ failed_attempts }}],
+                backgroundColor: ['#22c55e', '#ef4444'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((context.raw / total) * 100);
+                            return `${context.label}: ${context.raw} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    },
+
+    deviceStatus: {
+        type: 'pie',
+        data: {
+            labels: statusData.labels,
+            datasets: [{
+                data: statusData.counts,
+                backgroundColor: ['#22c55e', '#f59e0b', '#ef4444', '#6b7280'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    },
+
+    deviceType: {
+        type: 'bar',
+        data: {
+            labels: typeData.labels,
+            datasets: [{
+                label: 'Number of Devices',
+                data: typeData.counts,
+                backgroundColor: '#3b82f6',
+                borderColor: '#1e40af',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    },
+
+    securityLevel: {
+        type: 'polarArea',
+        data: {
+            labels: securityLevelData.labels,
+            datasets: [{
+                data: securityLevelData.counts,
+                backgroundColor: [
+                    '#f59e0b', // LOW
+                    '#3b82f6', // MEDIUM
+                    '#8b5cf6', // HIGH
+                    '#ef4444'  // MAXIMUM
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    },
+
+    sliceAccess: {
+        type: 'bar',
+        data: {
+            labels: sliceAccessData.labels,
+            datasets: [
+                {
+                    label: 'Total Attempts',
+                    data: sliceAccessData.totals,
+                    backgroundColor: '#3b82f6'
+                },
+                {
+                    label: 'Granted Access',
+                    data: sliceAccessData.granted,
+                    backgroundColor: '#22c55e'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    },
+
+    deviceAccess: {
+        type: 'line',
+        data: {
+            labels: deviceAccessData.labels,
+            datasets: [{
+                label: 'Success Rate (%)',
+                data: deviceAccessData.successRates,
+                borderColor: '#8b5cf6',
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            }
+        }
+    },
+
+    slicePerformance: {
+        type: 'radar',
+        data: {
+            labels: slicePerformanceData.labels,
+            datasets: [
+                {
+                    label: 'Avg Bandwidth (Mbps)',
+                    data: slicePerformanceData.bandwidth,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2
+                },
+                {
+                    label: 'Avg Latency (ms)',
+                    data: slicePerformanceData.latency,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    beginAtZero: true
+                }
+            }
+        }
+    },
+
+    dailyActivity: {
+        type: 'line',
+        data: {
+            labels: dailyAuthLabels,
+            datasets: [
+                {
+                    label: 'Authentication Attempts',
+                    data: dailyAuthData,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true
+                },
+                {
+                    label: 'Slice Access Attempts',
+                    data: dailySliceData,
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    }
+};
+
+// Initialize all charts
+document.addEventListener('DOMContentLoaded', function() {
+    // Create charts only if they have data
+    if (document.getElementById('authSuccessChart')) {
+        new Chart(document.getElementById('authSuccessChart'), chartConfigs.authSuccess);
+    }
+    if (document.getElementById('deviceStatusChart') && statusData.counts.length > 0) {
+        new Chart(document.getElementById('deviceStatusChart'), chartConfigs.deviceStatus);
+    }
+    if (document.getElementById('deviceTypeChart') && typeData.counts.length > 0) {
+        new Chart(document.getElementById('deviceTypeChart'), chartConfigs.deviceType);
+    }
+    if (document.getElementById('securityLevelChart') && securityLevelData.counts.length > 0) {
+        new Chart(document.getElementById('securityLevelChart'), chartConfigs.securityLevel);
+    }
+    if (document.getElementById('sliceAccessChart') && sliceAccessData.totals.length > 0) {
+        new Chart(document.getElementById('sliceAccessChart'), chartConfigs.sliceAccess);
+    }
+    if (document.getElementById('deviceAccessChart') && deviceAccessData.successRates.length > 0) {
+        new Chart(document.getElementById('deviceAccessChart'), chartConfigs.deviceAccess);
+    }
+    if (document.getElementById('slicePerformanceChart') && slicePerformanceData.bandwidth.length > 0) {
+        new Chart(document.getElementById('slicePerformanceChart'), chartConfigs.slicePerformance);
+    }
+    if (document.getElementById('dailyActivityChart') && dailyAuthData.length > 0) {
+        new Chart(document.getElementById('dailyActivityChart'), chartConfigs.dailyActivity);
+    }
+});
+</script>
+{% endblock %}

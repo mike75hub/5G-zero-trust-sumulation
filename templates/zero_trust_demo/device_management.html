@@ -1,0 +1,118 @@
+{% extends "zero_trust_demo/base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>📱 Device Management Console</h2>
+    <p>Manage all devices in the 5G zero-trust network registry.</p>
+    
+    {% if devices %}
+        <div style="overflow-x: auto;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Device Name</th>
+                        <th>Device ID</th>
+                        <th>Type</th>
+                        <th>Security Level</th>
+                        <th>Status</th>
+                        <th>Last Auth</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for device in devices %}
+                    <tr>
+                        <td>{{ device.name }}</td>
+                        <td><code>{{ device.device_id }}</code></td>
+                        <td>{{ device.get_device_type_display }}</td>
+                        <td>{{ device.get_security_level_display }}</td>
+                        <td>
+                            <span class="status-{{ device.status|lower }}">
+                                {{ device.get_status_display }}
+                            </span>
+                            {% if device.failed_attempts > 0 %}
+                                <br><small>Failed: {{ device.failed_attempts }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if device.last_authentication %}
+                                {{ device.last_authentication|timesince }} ago
+                            {% else %}
+                                Never
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form method="post" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="device_id" value="{{ device.id }}">
+                                
+                                {% if device.status == 'PENDING' %}
+                                    <button type="submit" name="action" value="approve" class="btn btn-primary" 
+                                            style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                                        Approve
+                                    </button>
+                                    <button type="submit" name="action" value="reject" class="btn btn-primary" 
+                                            style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: #dc3545;">
+                                        Reject
+                                    </button>
+                                {% elif device.status == 'APPROVED' %}
+                                    <button type="submit" name="action" value="suspend" class="btn btn-primary" 
+                                            style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: #ffc107;">
+                                        Suspend
+                                    </button>
+                                    <button type="submit" name="action" value="reset_key" class="btn btn-primary" 
+                                            style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: #17a2b8;">
+                                        Reset Key
+                                    </button>
+                                {% elif device.status == 'LOCKED' %}
+                                    <button type="submit" name="action" value="unlock" class="btn btn-primary" 
+                                            style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: #28a745;">
+                                        Unlock
+                                    </button>
+                                {% endif %}
+                                
+                                <button type="submit" name="action" value="delete" class="btn btn-primary" 
+                                        style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: #dc3545;"
+                                        onclick="return confirm('Delete this device permanently?')">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 3rem;">
+            <h3>No Devices Registered</h3>
+            <p>Go to the <a href="{% url 'zero_trust_demo:zero_trust_auth' %}">Authentication Demo</a> to register devices.</p>
+        </div>
+    {% endif %}
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <h4>📋 Device Status Guide</h4>
+        <ul style="list-style: none; padding: 0;">
+            <li>🟢 <strong>Approved:</strong> Can access network</li>
+            <li>🟡 <strong>Pending:</strong> Waiting for approval</li>
+            <li>🔴 <strong>Locked:</strong> Too many failed attempts</li>
+            <li>🟠 <strong>Suspended:</strong> Temporarily disabled</li>
+            <li>🔴 <strong>Rejected:</strong> Denied network access</li>
+        </ul>
+    </div>
+    
+    <div class="card">
+        <h4>⚙️ Management Actions</h4>
+        <ul style="list-style: none; padding: 0;">
+            <li><strong>Approve:</strong> Grant network access</li>
+            <li><strong>Reject:</strong> Deny registration</li>
+            <li><strong>Suspend:</strong> Temporary disable</li>
+            <li><strong>Unlock:</strong> Remove lockout</li>
+            <li><strong>Reset Key:</strong> Generate new secret</li>
+            <li><strong>Delete:</strong> Remove permanently</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

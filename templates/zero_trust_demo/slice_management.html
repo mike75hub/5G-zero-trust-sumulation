@@ -1,0 +1,116 @@
+{% extends "zero_trust_demo/base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h1 style="margin: 0; color: white;">⚙️ Network Slice Management</h1>
+    </div>
+    <p class="lead">Manage network slices and access policies</p>
+</div>
+
+<div class="grid-2">
+    <!-- Network Slices -->
+    <div class="card">
+        <h3 class="section-title">📡 Network Slices</h3>
+        {% if slices %}
+            {% for slice in slices %}
+                <div style="padding: 1.5rem; margin: 1rem 0; background: var(--light-blue); border-radius: 8px; border: 2px solid var(--secondary-blue);">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <h4 style="color: var(--primary-blue); margin: 0 0 0.5rem 0;">{{ slice.name }}</h4>
+                            <p style="margin: 0.25rem 0;"><strong>ID:</strong> <code>{{ slice.slice_id }}</code></p>
+                            <p style="margin: 0.25rem 0;"><strong>Type:</strong> {{ slice.get_slice_type_display }}</p>
+                            <p style="margin: 0.25rem 0;"><strong>Performance:</strong> {{ slice.min_bandwidth }}Mbps, {{ slice.max_latency }}ms</p>
+                            <p style="margin: 0.25rem 0;">
+                                <strong>Status:</strong> 
+                                {% if slice.is_active %}
+                                    <span style="color: #16a34a;">● Active</span>
+                                {% else %}
+                                    <span style="color: #dc2626;">● Inactive</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="slice_id" value="{{ slice.id }}">
+                            <button type="submit" name="action" value="toggle_active" class="btn {% if slice.is_active %}btn-outline{% else %}btn-primary{% endif %}" 
+                                    style="padding: 0.5rem 1rem; font-size: 0.8rem;">
+                                {% if slice.is_active %}Deactivate{% else %}Activate{% endif %}
+                            </button>
+                        </form>
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="slice_id" value="{{ slice.id }}">
+                            <button type="submit" name="action" value="delete_slice" class="btn btn-primary" 
+                                    style="padding: 0.5rem 1rem; font-size: 0.8rem; background: #dc2626; border-color: #dc2626;"
+                                    onclick="return confirm('Delete this network slice?')">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p style="text-align: center; color: var(--gray-dark); padding: 2rem;">No network slices configured.</p>
+        {% endif %}
+    </div>
+
+    <!-- Access Policies -->
+    <div class="card">
+        <h3 class="section-title">🔐 Access Policies</h3>
+        {% if policies %}
+            {% for policy in policies %}
+                <div style="padding: 1.5rem; margin: 1rem 0; background: #f0f9ff; border-radius: 8px; border: 2px solid #0ea5e9;">
+                    <h4 style="color: var(--primary-blue); margin: 0 0 0.5rem 0;">{{ policy.slice.name }}</h4>
+                    <p style="margin: 0.25rem 0;"><strong>Allowed Device Types:</strong></p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0;">
+                        {% for device_type in policy.allowed_device_types %}
+                            <span class="badge" style="background: var(--primary-blue);">{{ device_type }}</span>
+                        {% endfor %}
+                    </div>
+                    <p style="margin: 0.25rem 0;"><strong>Required Security:</strong> {{ policy.get_required_security_level_display }}</p>
+                    <p style="margin: 0.25rem 0;"><strong>Approval Required:</strong> {% if policy.requires_approval %}Yes{% else %}No{% endif %}</p>
+                    
+                    <form method="post" style="margin-top: 1rem;">
+                        {% csrf_token %}
+                        <input type="hidden" name="policy_id" value="{{ policy.id }}">
+                        <button type="submit" name="action" value="delete_policy" class="btn btn-primary" 
+                                style="padding: 0.5rem 1rem; font-size: 0.8rem; background: #dc2626; border-color: #dc2626;"
+                                onclick="return confirm('Delete this access policy?')">
+                            Delete Policy
+                        </button>
+                    </form>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p style="text-align: center; color: var(--gray-dark); padding: 2rem;">No access policies defined.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <h3 class="section-title">💡 Management Guide</h3>
+    <div class="grid-2">
+        <div>
+            <h4>Network Slices</h4>
+            <ul style="color: var(--black);">
+                <li>Each slice represents a virtual network with specific performance characteristics</li>
+                <li>Critical slices should have higher priority and stricter security</li>
+                <li>Deactivate slices when not in use to conserve resources</li>
+                <li>Monitor slice performance and adjust bandwidth/latency as needed</li>
+            </ul>
+        </div>
+        <div>
+            <h4>Access Policies</h4>
+            <ul style="color: var(--black);">
+                <li>Define which device types can access each slice</li>
+                <li>Set appropriate security level requirements</li>
+                <li>Use approval requirements for sensitive slices</li>
+                <li>Regularly review and update policies based on usage patterns</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
