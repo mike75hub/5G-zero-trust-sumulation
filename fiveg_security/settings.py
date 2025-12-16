@@ -25,9 +25,14 @@ SECRET_KEY = 'django-insecure-6@=5ij6&@*vel++@%h6q(!cmnaz=9$f2o2l1r(=17s^tc=b$7z
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['fiveg-zero-trust-sumulation-3.onrender.com']
+ALLOWED_HOSTS = []
 
-
+# Add Render domain automatically
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+ # Also allow localhost for development
+ALLOWED_HOSTS.extend(['localhost', '127.0.0.1'])
 # Application definition
 
 INSTALLED_APPS = [
